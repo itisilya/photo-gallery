@@ -4,6 +4,7 @@ from typing import List
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.concurrency import run_in_threadpool  # Для синхронного S3
+from fastapi.middleware.cors import CORSMiddleware
 from bson import ObjectId
 
 from .database import photos_collection
@@ -11,6 +12,14 @@ from .models import PhotoResponse, PhotoUpdate
 from .storage import storage
 
 app = FastAPI(title="Yandex Cloud Photo Gallery")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.on_event("startup")

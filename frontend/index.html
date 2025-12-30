@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Photo Gallery</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .photo-card:hover .actions { opacity: 1; }
+        .actions { opacity: 0; transition: opacity 0.3s; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div id="app" class="container mx-auto py-8 px-4">
+
+        <!-- Заголовок -->
+        <header class="mb-10 text-center">
+            <h1 class="text-4xl font-bold text-gray-800">Облачная Галерея</h1>
+            <p class="text-gray-600">Yandex Cloud + FastAPI + MongoDB</p>
+        </header>
+
+        <!-- Форма загрузки -->
+        <div class="bg-white p-6 rounded-xl shadow-md mb-10 max-w-2xl mx-auto">
+            <h2 class="text-xl font-semibold mb-4">Загрузить новое фото</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input v-model="newItem.title" type="text" placeholder="Название" class="border p-2 rounded">
+                <input v-model="newItem.description" type="text" placeholder="Описание" class="border p-2 rounded">
+                <input type="file" @change="handleFileUpload" class="md:col-span-2 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                <button @click="uploadPhoto" :disabled="loading" class="md:col-span-2 bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:bg-gray-400">
+                    {{ loading ? 'Загрузка...' : 'Опубликовать' }}
+                </button>
+            </div>
+        </div>
+
+        <!-- Сетка фотографий -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div v-for="photo in photos" :key="photo.id" class="photo-card bg-white rounded-lg shadow overflow-hidden relative">
+                <!-- Ссылка на оригинал, отображаем Thumbnail если есть -->
+                <a :href="photo.url" target="_blank">
+                    <img :src="getThumbUrl(photo)" :alt="photo.title" class="w-full h-48 object-cover hover:scale-105 transition">
+                </a>
+
+                <div class="p-4">
+                    <h3 class="font-bold text-lg truncate">{{ photo.title }}</h3>
+                    <p class="text-gray-600 text-sm h-10 overflow-hidden">{{ photo.description }}</p>
+
+                    <!-- Кнопки управления -->
+                    <div class="actions absolute top-2 right-2 flex space-x-2">
+                        <button @click="editPhoto(photo)" class="bg-yellow-400 p-2 rounded-full shadow hover:bg-yellow-500">✏️</button>
+                        <button @click="deletePhoto(photo.id)" class="bg-red-500 p-2 rounded-full shadow text-white hover:bg-red-600">🗑️</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const API_URL = 'http://127.0.0.1:8000';
+
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    photos: [],
+                    loading: false,
+                    selectedFile: null,
+                    newItem: { title: '', description: '' }
+                }
+            },
+            methods: {
+                async fetchPhotos() {
+                    const res = await fetch(`${API_URL}/api/photos`);
+                    this.photos = await res.json();
+                },
+                handleFileUpload(event) {
+                    this.selectedFile = event.target.files[0];
+                },
+                async uploadPhoto() {
+                    if (!this.selectedFile) return alert('Выберите файл');
+                    this.loading = true;
+
+                    const formData = new FormData();
+                    formData.append('file', this.selectedFile);
+                    formData.append('title', this.newItem.title);
+                    formData.append('description', this.newItem.description);
+
+                    try {
+                        const res = await fetch(`${API_URL}/api/photos/upload`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        if (res.ok) {
+                            this.newItem = { title: '', description: '' };
+                            await this.fetchPhotos();
+                        }
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                async deletePhoto(id) {
+                    if (confirm('Удалить это фото?')) {
+                        await fetch(`${API_URL}/api/photos/${id}`, { method: 'DELETE' });
+                        this.fetchPhotos();
+                    }
+                },
+                async editPhoto(photo) {
+                    const newTitle = prompt('Новое название', photo.title);
+                    if (newTitle) {
+                        await fetch(`${API_URL}/api/photos/${photo.id}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ title: newTitle })
+                        });
+                        this.fetchPhotos();
+                    }
+                },
+                getThumbUrl(photo) {
+                    // Логика: если в S3 есть файл с префиксом thumb_, показываем его
+                    // Для простоты: Cloud Function сохраняет его как thumb_UUID.jpg
+                    // Мы просто заменяем имя файла в URL
+                    //return photo.url.replace(photo.filename, 'thumb_' + photo.filename);
+                    return photo.url
+                }
+            },
+            mounted() {
+                this.fetchPhotos();
+            }
+        }).mount('#app')
+    </script>
+</body>
+</html>
