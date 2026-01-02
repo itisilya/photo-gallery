@@ -1,0 +1,19 @@
+// src/api/api.ts
+import axios from 'axios';
+
+// Автоматически подхватит VITE_API_URL из .env.local
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+
+export const api = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 10000,
+});
+
+// Глобальный обработчик ошибок (опционально)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error('API Error:', error.response?.data || error.message);
+    return Promise.reject(error);
+  }
+);

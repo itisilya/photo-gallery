@@ -35,4 +35,5 @@ class PhotoResponse(BaseModel):
     description: Optional[str] = None
     filename: str
     url: str
+    thumb_url: Optional[str] = None
     upload_date: datetime

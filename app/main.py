@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
-from typing import List
+from typing import List, Optional
+import os
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.concurrency import run_in_threadpool  # Для синхронного S3
@@ -15,12 +16,11 @@ app = FastAPI(title="Yandex Cloud Photo Gallery")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173"],  # ← разрешить только фронтенд
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 @app.on_event("startup")
 async def startup_event():
@@ -45,11 +45,15 @@ async def upload_photo(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"S3 Upload Error: {str(e)}")
 
+    thumb_filename = f"thumb_{filename}"
+    thumb_url = f"{os.getenv('S3_ENDPOINT')}/{os.getenv('S3_BUCKET_NAME')}/{thumb_filename}"
+
     new_photo = {
         "title": title,
         "description": description,
         "filename": filename,
         "url": file_url,
+        "thumb_url": thumb_url,
         "upload_date": datetime.utcnow()
     }
 
@@ -61,6 +65,7 @@ async def upload_photo(
         "description": description,
         "filename": filename,
         "url": file_url,
+        "thumb_url": thumb_url,
         "upload_date": new_photo["upload_date"]
     }
 
@@ -78,6 +83,7 @@ async def list_photos():
             "description": photo.get("description"),
             "filename": photo["filename"],
             "url": photo.get("url"),  # Это уже ссылка на Yandex Cloud S3
+            "thumb_url": photo.get("thumb_url"),
             "upload_date": photo["upload_date"]
         })
     return photos
@@ -101,6 +107,7 @@ async def get_photo(photo_id: str):
         "description": photo.get("description"),
         "filename": photo["filename"],
         "url": photo.get("url"),
+        "thumb_url": photo.get("thumb_url"),
         "upload_date": photo["upload_date"]
     }
 

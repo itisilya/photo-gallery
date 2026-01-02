@@ -47,8 +47,24 @@ class S3Storage:
 
     def delete(self, filename: str):
         try:
-            self.s3.delete_object(Bucket=self.bucket_name, Key=filename)
-            print(f"Файл {filename} удален из S3")
+            # Формируем список объектов для удаления
+            objects_to_delete = [
+                {'Key': filename},  # Оригинал
+                {'Key': f"thumb_{filename}"}  # Превью
+            ]
+
+            print(f"Попытка удаления файлов: {filename} и thumb_{filename}...")
+
+            # Удаляем несколько объектов сразу
+            response = self.s3.delete_objects(
+                Bucket=self.bucket_name,
+                Delete={
+                    'Objects': objects_to_delete,
+                    'Quiet': True  # Не возвращать детали по каждому файлу, если всё ок
+                }
+            )
+            print(f"Удаление из S3 завершено успешно.")
+
         except Exception as e:
             print(f"Ошибка при удалении из S3: {e}")
 
