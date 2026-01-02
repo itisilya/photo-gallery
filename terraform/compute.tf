@@ -29,16 +29,17 @@ resource "yandex_compute_instance" "backend-vm" {
     ssh-keys = "ubuntu:${file("~/.ssh/id_ed25519.pub")}"
     user-data = <<-EOF
       #!/bin/bash
-      # 1. Установка Docker и Docker Compose
+      # Установка зависимостей
       apt-get update
       apt-get install -y docker.io docker-compose git
 
-      # 2. Клонирование кода
+      # Подготовка приложения
       cd /home/ubuntu
       git clone https://github.com/itisilya/photo-gallery.git
       cd photo-gallery
 
-      # 3. Создание файла .env с данными, которые знает Terraform
+      # Создание .env с использованием данных из Terraform
+      # Используем статический IP для фронтенда
       cat <<EOT > .env
       MONGODB_URL=mongodb://admin:password@mongodb:27017
       DB_NAME=gallery_db
@@ -47,10 +48,10 @@ resource "yandex_compute_instance" "backend-vm" {
       S3_SECRET_KEY=${yandex_iam_service_account_static_access_key.sa-static-key.secret_key}
       S3_REGION=ru-central1
       S3_ENDPOINT=https://storage.yandexcloud.net
-      VITE_API_URL=http://${yandex_alb_load_balancer.gallery-lb.listener.0.endpoint.0.address.0.external_ipv4_address}/api
+      VITE_API_URL=http://${yandex_vpc_address.gallery-ip.external_ipv4_address.0.address}/api
       EOT
 
-      # 4. Запуск всего проекта
+      # Запуск
       docker-compose up -d --build
     EOF
   }

@@ -8,6 +8,13 @@ resource "yandex_alb_target_group" "gallery-tg" {
   }
 }
 
+resource "yandex_vpc_address" "gallery-ip" {
+  name = "gallery-static-ip"
+  external_ipv4_address {
+    zone_id = "ru-central1-a"
+  }
+}
+
 # Группа бэкендов
 resource "yandex_alb_backend_group" "gallery-bg" {
   name = "gallery-backend-group"
@@ -64,7 +71,9 @@ resource "yandex_alb_load_balancer" "gallery-lb" {
     name = "http-listener"
     endpoint {
       address {
-        external_ipv4_address {}
+        external_ipv4_address {
+          address = yandex_vpc_address.gallery-ip.external_ipv4_address.0.address # Ссылка на статический IP
+        }
       }
       ports = [80]
     }
