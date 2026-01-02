@@ -51,6 +51,10 @@ resource "yandex_compute_instance" "backend-vm" {
       VITE_API_URL=/api
       EOT
 
+      cat <<EOT > frontend/.env.local
+      VITE_API_URL=/api
+      EOT
+
       # Запуск
       docker-compose up -d --build
     EOF
