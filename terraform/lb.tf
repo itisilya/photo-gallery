@@ -22,16 +22,16 @@ resource "yandex_alb_backend_group" "gallery-bg" {
   http_backend {
     name             = "fastapi-backend"
     weight           = 1
-    port             = 8000 # Порт вашего FastAPI
+    port             = 80 # Порт вашего FastAPI
     target_group_ids = [yandex_alb_target_group.gallery-tg.id]
     load_balancing_config {
       panic_threshold = 50
     }
     healthcheck {
-      timeout  = "1s"
-      interval = "1s"
+      timeout  = "2s"
+      interval = "2s"
       http_healthcheck {
-        path = "/ping" # Тот самый эндпоинт, который мы делали для теста
+        path = "/" # Проверяем корень фронтенда (порт 80)
       }
     }
   }

@@ -1,13 +1,18 @@
-# Этап сборки
-FROM node:18 as build-stage
+FROM node:20-alpine
+
 WORKDIR /app
+
 COPY package*.json ./
 RUN npm install
-COPY . .
-RUN npm run build
 
-# Этап раздачи
-FROM nginx:stable-alpine as production-stage
-COPY --from=build-stage /app/dist /usr/share/nginx/html
+COPY . .
+
+RUN npm run build-only
+
+FROM nginx:alpine
+COPY --from=0 /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/nginx.conf
+
 EXPOSE 80
+
 CMD ["nginx", "-g", "daemon off;"]

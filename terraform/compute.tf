@@ -48,7 +48,7 @@ resource "yandex_compute_instance" "backend-vm" {
       S3_SECRET_KEY=${yandex_iam_service_account_static_access_key.sa-static-key.secret_key}
       S3_REGION=ru-central1
       S3_ENDPOINT=https://storage.yandexcloud.net
-      VITE_API_URL=http://${yandex_vpc_address.gallery-ip.external_ipv4_address.0.address}/api
+      VITE_API_URL=/api
       EOT
 
       # Запуск

@@ -16,7 +16,7 @@ app = FastAPI(title="Yandex Cloud Photo Gallery")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # ← разрешить только фронтенд
+    allow_origins=["*"],  # ← разрешить только фронтенд
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
